@@ -1,6 +1,6 @@
 "use client";
 
-import { lazy, Suspense, useDeferredValue, useRef, useState, useTransition, useCallback } from "react";
+import { lazy, Suspense, useDeferredValue, useRef, useTransition, useCallback } from "react";
 import { parseAsString, useQueryState } from "nuqs";
 import { type CharacterSummary } from "@/lib/characterData";
 
@@ -17,7 +17,6 @@ export function CharacterListClient({ initialCharacters }: CharacterListClientPr
   const inputRef = useRef<HTMLInputElement>(null);
   const deferredQuery = useDeferredValue(searchQuery);
   const [, startTransition] = useTransition();
-  const [visibleCount, setVisibleCount] = useState(initialCharacters.length);
 
   const clearSearch = useCallback(() => {
     startTransition(() => {
@@ -36,7 +35,7 @@ export function CharacterListClient({ initialCharacters }: CharacterListClientPr
         </p>
         <h1 className="mt-3 text-3xl font-black text-white sm:text-4xl">Nikke Character List</h1>
         <p className="mt-2 text-sm text-slate-300">
-          Total Units: <span className="font-semibold text-cyan-300">{visibleCount}</span>
+          Total Units: <span className="font-semibold text-cyan-300">{initialCharacters.length}</span>
         </p>
         <div className="mt-4 flex gap-2">
           <input
@@ -72,7 +71,6 @@ export function CharacterListClient({ initialCharacters }: CharacterListClientPr
           initialCharacters={initialCharacters}
           searchQuery={deferredQuery}
           onClearSearch={clearSearch}
-          onFilteredCountChange={setVisibleCount}
         />
       </Suspense>
     </main>
