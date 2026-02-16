@@ -1,65 +1,110 @@
+import Link from "next/link";
 import Image from "next/image";
+import { getCharacters, type CharacterSummary } from "@/lib/characterData";
 
-export default function Home() {
-  return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
+async function getCharacterList(): Promise<CharacterSummary[]> {
+  try {
+    return await getCharacters();
+  } catch (_error) {
+    return [];
+  }
+}
+
+export default async function Home() {
+  const characters = await getCharacterList();
+
+  if (characters.length === 0) {
+    return (
+      <main className="mx-auto flex min-h-[calc(100vh-6rem)] max-w-6xl items-center justify-center px-4">
+        <section className="rounded-2xl border border-slate-700/60 bg-slate-950/65 p-8 text-center">
+          <h1 className="text-3xl font-bold text-cyan-200">Nikke Characters</h1>
+          <p className="mt-3 text-slate-300">No character data available.</p>
+        </section>
       </main>
-    </div>
+    );
+  }
+
+  return (
+    <main className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+      <header className="mb-8">
+        <p className="inline-flex items-center gap-2 rounded-full border border-cyan-500/30 bg-cyan-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-cyan-300">
+          Nikke Unit Roster
+        </p>
+        <h1 className="mt-3 text-4xl font-black text-white">Nikke Character List</h1>
+        <p className="mt-2 text-sm text-slate-300">
+          Total Units: <span className="font-semibold text-cyan-300">{characters.length}</span>
+        </p>
+      </header>
+
+      <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        {characters.map((character) => (
+          <Link
+            key={character.id}
+            href={`/${character.slug}`}
+            className="group block rounded-2xl border border-cyan-500/20 bg-slate-950/70 p-4 shadow-[0_0_30px_rgba(8,145,178,0.13)] transition duration-200 hover:translate-y-[-2px] hover:border-cyan-400/45 hover:shadow-[0_0_40px_rgba(14,165,233,0.3)]"
+          >
+            <article>
+              <div className="flex items-center gap-3">
+                <Image
+                  src={character.smallImageUrl}
+                  alt={character.name}
+                  width={character.smallImageWidth}
+                  height={character.smallImageHeight}
+                  className="h-16 w-16 rounded-lg border border-cyan-300/20 bg-slate-900 object-cover shadow-[0_0_12px_rgba(34,211,238,0.25)]"
+                />
+                <div>
+                  <h2 className="text-lg font-bold text-cyan-100">{character.name}</h2>
+                  <p className="text-xs uppercase tracking-wide text-slate-400">{character.slug}</p>
+                </div>
+              </div>
+
+              <div className="mt-3 space-y-1 text-sm text-slate-200">
+                <p>
+                  <span className="text-cyan-300">Rarity</span> · {character.rarity}
+                </p>
+                <p>
+                  <span className="text-cyan-300">Element</span> · {character.element}
+                </p>
+                <p>
+                  <span className="text-cyan-300">Weapon</span> · {character.weapon}
+                </p>
+                <p>
+                  <span className="text-cyan-300">Class</span> · {character.role}
+                </p>
+                <p>
+                  <span className="text-cyan-300">Squad</span> · {character.squad}
+                </p>
+                <p>
+                  <span className="text-cyan-300">Manufacturer</span> · {character.manufacturer}
+                </p>
+              </div>
+
+              <div className="mt-3 flex flex-wrap items-center gap-2">
+                <span className="rounded-full border border-cyan-300/40 bg-cyan-300/10 px-2.5 py-1 text-xs text-cyan-200">
+                  Burst {character.burstType}
+                </span>
+                <span className="rounded-full border border-slate-400/30 bg-slate-700/40 px-2.5 py-1 text-xs text-slate-200">
+                  {character.isLimited === null
+                    ? "Limited: Unknown"
+                    : character.isLimited
+                      ? "Limited"
+                      : "Standard"}
+                </span>
+                <span className="rounded-full border border-slate-400/30 bg-slate-700/40 px-2.5 py-1 text-xs text-slate-200">
+                  {character.limitedEvent ?? "No Event"}
+                </span>
+              </div>
+
+              {character.skills.length > 0 && (
+                <p className="mt-3 text-xs text-slate-400">
+                  Skills:{" "}
+                  <span className="text-cyan-100">{character.skills.map((skill) => skill.slot).join(", ")}</span>
+                </p>
+              )}
+            </article>
+          </Link>
+        ))}
+      </section>
+    </main>
   );
 }
