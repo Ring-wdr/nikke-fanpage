@@ -27,9 +27,9 @@ export default async function TierListPage() {
     );
 
   return (
-    <main className="px-4 py-8 sm:px-6 lg:px-8">
-      <section className="mx-auto w-full max-w-7xl">
-        <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
+    <main className="flex h-[100dvh] flex-col px-4 pt-4 pb-2 sm:px-6 lg:px-8">
+      <section className="mx-auto flex w-full max-w-7xl min-h-0 flex-1 flex-col">
+        <div className="mb-4 flex flex-shrink-0 flex-wrap items-start justify-between gap-3">
           <div>
             <p className="inline-flex items-center gap-2 rounded-full border border-cyan-500/30 bg-cyan-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-cyan-300">
               Nikke Tier Builder

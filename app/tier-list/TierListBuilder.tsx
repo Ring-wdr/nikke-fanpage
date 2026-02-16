@@ -135,7 +135,7 @@ function TierListBoard({
                           draggable
                           onDragStart={onDragStart(slug, tier.key)}
                           onDoubleClick={() => onCardToPool(slug, tier.key)}
-                          className="flex cursor-grab items-center gap-2 rounded-lg border border-slate-600/80 bg-slate-900/90 px-2 py-1 text-xs transition hover:border-cyan-300/80"
+                          className="group flex cursor-grab items-center gap-2 rounded-lg border border-slate-600/80 bg-slate-900/90 px-2 py-1 text-xs transition hover:border-cyan-300/80"
                         >
                           <Image
                             src={character.smallImageUrl}
@@ -145,6 +145,14 @@ function TierListBoard({
                             className="h-8 w-8 rounded-md border border-cyan-300/25 bg-slate-950 object-cover"
                           />
                           <p className="text-cyan-100">{character.name}</p>
+                          <button
+                            type="button"
+                            onClick={() => onCardToPool(slug, tier.key)}
+                            className="ml-auto hidden h-5 w-5 shrink-0 items-center justify-center rounded-full text-slate-400 transition hover:bg-rose-500/20 hover:text-rose-300 group-hover:flex"
+                            aria-label={`Remove ${character.name}`}
+                          >
+                            ×
+                          </button>
                         </article>
                       );
                     })
@@ -178,31 +186,31 @@ function UnassignedPool({
 }: UnassignedPoolProps) {
   return (
     <section
-      className="fixed inset-x-2 bottom-3 z-30 max-h-[44vh] overflow-hidden rounded-2xl border border-slate-700/40 bg-slate-950/85 p-3 md:sticky md:bottom-4 md:inset-x-auto"
+      className="flex-shrink-0 overflow-hidden rounded-2xl border border-slate-700/40 bg-slate-950/85 p-3"
       onDrop={onDropToZone("pool")}
       onDragOver={(event) => {
         event.preventDefault();
       }}
     >
-      <div className="mb-3 flex items-center justify-between">
-        <h2 className="text-lg font-bold text-white">Unassigned Pool</h2>
-        <span className="rounded-full border border-slate-400/30 px-2 py-0.5 text-xs text-slate-200">
-          {isSearching ? "Updating..." : `${unassignedCharacters.length}`}
+      <div className="mb-2 flex items-center gap-3">
+        <h2 className="shrink-0 text-sm font-bold text-white">Unassigned</h2>
+        <span className="shrink-0 rounded-full border border-slate-400/30 px-2 py-0.5 text-xs text-slate-200">
+          {isSearching ? "..." : `${unassignedCharacters.length}`}
         </span>
+        <label className="min-w-0 flex-1">
+          <span className="sr-only">Search characters</span>
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(event) => onSearchChange(event.target.value)}
+            placeholder="Search..."
+            className="w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-1.5 text-sm text-slate-100 outline-none ring-cyan-500 placeholder:text-slate-400 focus:ring-2"
+          />
+        </label>
       </div>
-      <label className="mb-2 block">
-        <span className="sr-only">Search characters</span>
-        <input
-          type="text"
-          value={searchQuery}
-          onChange={(event) => onSearchChange(event.target.value)}
-          placeholder="Search character..."
-          className="w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-sm text-slate-100 outline-none ring-cyan-500 placeholder:text-slate-400 focus:ring-2"
-        />
-      </label>
-      <div className="mt-2 grid max-h-[34vh] min-h-20 grid-cols-2 gap-2 overflow-y-auto pr-1 sm:grid-cols-3 lg:grid-cols-4">
+      <div className="mt-2 flex gap-2 overflow-x-auto pb-1">
         {unassignedCharacters.length === 0 ? (
-          <p className="col-span-full rounded-md border border-dashed border-slate-700/60 p-4 text-center text-xs text-slate-400">
+          <p className="w-full rounded-md border border-dashed border-slate-700/60 p-4 text-center text-xs text-slate-400">
             No characters found
           </p>
         ) : (
@@ -211,7 +219,7 @@ function UnassignedPool({
               key={`pool-${character.slug}`}
               draggable
               onDragStart={onDragStart(character.slug, "pool")}
-              className="flex items-center gap-2 rounded-lg border border-slate-700/50 bg-slate-900/70 p-2"
+              className="flex shrink-0 items-center gap-2 rounded-lg border border-slate-700/50 bg-slate-900/70 p-2"
             >
               <Image
                 src={character.smallImageUrl}
@@ -220,7 +228,7 @@ function UnassignedPool({
                 height={character.smallImageHeight}
                 className="h-10 w-10 rounded-md border border-cyan-300/25 bg-slate-950 object-cover"
               />
-              <p className="text-xs text-cyan-100">{character.name}</p>
+              <p className="whitespace-nowrap text-xs text-cyan-100">{character.name}</p>
             </article>
           ))
         )}
@@ -460,15 +468,17 @@ export function TierListBuilder({ characters }: TierListBuilderProps) {
   );
 
   return (
-    <section className="mt-6 space-y-6">
-      <TierListBoard
-        tierDefinitions={tierDefinitions}
-        tiersFromQuery={tiersFromQuery}
-        characterLookup={characterLookup}
-        onDropToZone={onDropToZone}
-        onDragStart={onDragStart}
-        onCardToPool={onCardToPool}
-      />
+    <section className="mt-4 flex min-h-0 flex-1 flex-col gap-4">
+      <div className="min-h-0 flex-1 overflow-y-auto">
+        <TierListBoard
+          tierDefinitions={tierDefinitions}
+          tiersFromQuery={tiersFromQuery}
+          characterLookup={characterLookup}
+          onDropToZone={onDropToZone}
+          onDragStart={onDragStart}
+          onCardToPool={onCardToPool}
+        />
+      </div>
       <UnassignedPool
         unassignedCharacters={filteredUnassignedCharacters}
         onDropToZone={onDropToZone}
