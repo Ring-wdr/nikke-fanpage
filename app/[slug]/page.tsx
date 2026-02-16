@@ -229,12 +229,6 @@ export default async function CharacterDetailPage({ params }: Params) {
         {renderSkills(detailCharacter)}
       </section>
 
-      <section className="mt-6 rounded-2xl border border-cyan-500/20 bg-slate-950/70 p-5">
-        <h2 className="text-xl font-bold text-cyan-200">Review</h2>
-        <p className="mt-3 text-sm text-slate-100 whitespace-pre-line">
-          {parseRichText(detailCharacter.reviewRaw) || "No review data."}
-        </p>
-      </section>
     </main>
   );
 }
