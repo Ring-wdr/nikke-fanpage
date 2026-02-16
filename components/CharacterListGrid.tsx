@@ -2,16 +2,61 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { useEffect, useMemo } from "react";
 import { type CharacterSummary } from "@/lib/characterData";
 
 type CharacterListGridProps = {
-  characters: CharacterSummary[];
+  initialCharacters: CharacterSummary[];
+  searchQuery: string;
+  onClearSearch: () => void;
+  onFilteredCountChange: (count: number) => void;
 };
 
-export default function CharacterListGrid({ characters }: CharacterListGridProps) {
+function sortCharacters(characters: CharacterSummary[]): CharacterSummary[] {
+  return characters.slice().sort((left, right) =>
+    left.name.localeCompare(right.name, "en", {
+      sensitivity: "base",
+    }),
+  );
+}
+
+export default function CharacterListGrid({
+  initialCharacters,
+  searchQuery,
+  onClearSearch,
+  onFilteredCountChange,
+}: CharacterListGridProps) {
+  const filteredCharacters = useMemo(() => {
+    const normalized = searchQuery.trim().toLowerCase();
+    const sorted = sortCharacters(initialCharacters);
+    if (!normalized) {
+      return sorted;
+    }
+    return sorted.filter((character) => character.name.toLowerCase().includes(normalized));
+  }, [initialCharacters, searchQuery]);
+
+  useEffect(() => {
+    onFilteredCountChange(filteredCharacters.length);
+  }, [filteredCharacters.length, onFilteredCountChange]);
+
+  if (filteredCharacters.length === 0) {
+    return (
+      <section className="rounded-2xl border border-slate-700/60 bg-slate-950/65 p-6 text-slate-300">
+        <p>No character matched your search.</p>
+        <button
+          type="button"
+          onClick={onClearSearch}
+          className="mt-3 rounded-lg border border-cyan-300/40 bg-cyan-300/20 px-4 py-2 text-sm font-semibold text-cyan-100 transition hover:bg-cyan-300/30"
+        >
+          Clear search
+        </button>
+      </section>
+    );
+  }
+
   return (
     <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-      {characters.map((character) => (
+      {filteredCharacters.map((character) => (
         <Link
           key={character.id}
           href={`/${character.slug}`}
@@ -76,4 +121,3 @@ export default function CharacterListGrid({ characters }: CharacterListGridProps
     </section>
   );
 }
-

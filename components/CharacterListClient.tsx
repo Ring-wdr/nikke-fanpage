@@ -1,6 +1,6 @@
 "use client";
 
-import { lazy, Suspense, useDeferredValue, useMemo, useRef, useTransition } from "react";
+import { lazy, Suspense, useDeferredValue, useRef, useState, useTransition, useCallback } from "react";
 import { parseAsString, useQueryState } from "nuqs";
 import { type CharacterSummary } from "@/lib/characterData";
 
@@ -10,14 +10,6 @@ type CharacterListClientProps = {
   initialCharacters: CharacterSummary[];
 };
 
-function sortCharacters(characters: CharacterSummary[]): CharacterSummary[] {
-  return characters.slice().sort((left, right) =>
-    left.name.localeCompare(right.name, "en", {
-      sensitivity: "base",
-    }),
-  );
-}
-
 export function CharacterListClient({ initialCharacters }: CharacterListClientProps) {
   const [searchQuery, setSearchQuery] = useQueryState("q", parseAsString.withDefault(""), {
     history: "replace",
@@ -25,15 +17,16 @@ export function CharacterListClient({ initialCharacters }: CharacterListClientPr
   const inputRef = useRef<HTMLInputElement>(null);
   const deferredQuery = useDeferredValue(searchQuery);
   const [, startTransition] = useTransition();
-  const characters = useMemo(() => sortCharacters(initialCharacters), [initialCharacters]);
+  const [visibleCount, setVisibleCount] = useState(initialCharacters.length);
 
-  const filteredCharacters = useMemo(() => {
-    const normalized = deferredQuery.trim().toLowerCase();
-    if (!normalized) {
-      return characters;
+  const clearSearch = useCallback(() => {
+    startTransition(() => {
+      void setSearchQuery("");
+    });
+    if (inputRef.current) {
+      inputRef.current.value = "";
     }
-    return characters.filter((character) => character.name.toLowerCase().includes(normalized));
-  }, [deferredQuery, characters]);
+  }, [setSearchQuery]);
 
   return (
     <main className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
@@ -43,7 +36,7 @@ export function CharacterListClient({ initialCharacters }: CharacterListClientPr
         </p>
         <h1 className="mt-3 text-3xl font-black text-white sm:text-4xl">Nikke Character List</h1>
         <p className="mt-2 text-sm text-slate-300">
-          Total Units: <span className="font-semibold text-cyan-300">{filteredCharacters.length}</span>
+          Total Units: <span className="font-semibold text-cyan-300">{visibleCount}</span>
         </p>
         <div className="mt-4 flex gap-2">
           <input
@@ -66,37 +59,22 @@ export function CharacterListClient({ initialCharacters }: CharacterListClientPr
         )}
       </header>
 
-      {filteredCharacters.length === 0 ? (
-        <section className="rounded-2xl border border-slate-700/60 bg-slate-950/65 p-6 text-slate-300">
-          <p>No character matched your search.</p>
-          <button
-            type="button"
-            onClick={() => {
-              startTransition(() => {
-                void setSearchQuery("");
-              });
-              if (inputRef.current) {
-                inputRef.current.value = "";
-              }
-            }}
-            className="mt-3 rounded-lg border border-cyan-300/40 bg-cyan-300/20 px-4 py-2 text-sm font-semibold text-cyan-100 transition hover:bg-cyan-300/30"
-          >
-            Clear search
-          </button>
-        </section>
-      ) : (
-        <Suspense
-          fallback={
-            <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-              <div className="rounded-2xl border border-slate-700/60 bg-slate-950/65 p-6 text-sm text-slate-300 sm:col-span-2 lg:col-span-3 xl:col-span-4">
-                Loading characters…
-              </div>
-            </section>
-          }
-        >
-          <CharacterListGrid characters={filteredCharacters} />
-        </Suspense>
-      )}
+      <Suspense
+        fallback={
+          <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            <div className="rounded-2xl border border-slate-700/60 bg-slate-950/65 p-6 text-sm text-slate-300 sm:col-span-2 lg:col-span-3 xl:col-span-4">
+              Loading characters…
+            </div>
+          </section>
+        }
+      >
+        <CharacterListGrid
+          initialCharacters={initialCharacters}
+          searchQuery={deferredQuery}
+          onClearSearch={clearSearch}
+          onFilteredCountChange={setVisibleCount}
+        />
+      </Suspense>
     </main>
   );
 }
