@@ -10,15 +10,36 @@ async function getCharacterList(): Promise<CharacterSummary[]> {
   }
 }
 
-export default async function Home() {
-  const characters = await getCharacterList();
+function parseSearchQuery(searchParams?: {
+  q?: string | string[];
+}): string {
+  const raw = Array.isArray(searchParams?.q) ? searchParams.q[0] : searchParams?.q;
+  return typeof raw === "string" ? raw.trim() : "";
+}
 
-  if (characters.length === 0) {
+type HomePageProps = {
+  searchParams?: Promise<{
+    q?: string | string[];
+  }>;
+};
+
+export default async function Home({ searchParams }: HomePageProps) {
+  const search = parseSearchQuery(await (searchParams ?? Promise.resolve({})));
+  const characters = await getCharacterList();
+  const filteredCharacters = characters
+    .filter((character) => character.name.toLowerCase().includes(search.toLowerCase()))
+    .sort((left, right) =>
+      left.name.localeCompare(right.name, "en", {
+        sensitivity: "base",
+      }),
+    );
+
+  if (filteredCharacters.length === 0) {
     return (
       <main className="mx-auto flex min-h-[calc(100vh-6rem)] max-w-6xl items-center justify-center px-4">
         <section className="rounded-2xl border border-slate-700/60 bg-slate-950/65 p-8 text-center">
           <h1 className="text-3xl font-bold text-cyan-200">Nikke Characters</h1>
-          <p className="mt-3 text-slate-300">No character data available.</p>
+          <p className="mt-3 text-slate-300">No character matched your search.</p>
         </section>
       </main>
     );
@@ -32,12 +53,32 @@ export default async function Home() {
         </p>
         <h1 className="mt-3 text-4xl font-black text-white">Nikke Character List</h1>
         <p className="mt-2 text-sm text-slate-300">
-          Total Units: <span className="font-semibold text-cyan-300">{characters.length}</span>
+          Total Units: <span className="font-semibold text-cyan-300">{filteredCharacters.length}</span>
         </p>
+        <form action="/" method="get" className="mt-4 flex gap-2">
+          <input
+            name="q"
+            type="search"
+            defaultValue={search}
+            placeholder="Search character name"
+            className="min-w-0 flex-1 rounded-lg border border-cyan-500/30 bg-slate-950/70 px-3 py-2 text-sm text-cyan-100 placeholder:text-slate-500 focus:border-cyan-300 focus:outline-none focus:ring-1 focus:ring-cyan-300"
+          />
+          <button
+            type="submit"
+            className="rounded-lg border border-cyan-300/40 bg-cyan-300/20 px-4 py-2 text-sm font-semibold text-cyan-100 transition hover:bg-cyan-300/30"
+          >
+            Search
+          </button>
+        </form>
+        {search && (
+          <p className="mt-2 text-xs text-slate-300">
+            Showing results for <span className="text-cyan-300">{`"${search}"`}</span>
+          </p>
+        )}
       </header>
 
       <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-        {characters.map((character) => (
+        {filteredCharacters.map((character) => (
           <Link
             key={character.id}
             href={`/${character.slug}`}
