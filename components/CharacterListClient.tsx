@@ -51,11 +51,9 @@ export function CharacterListClient({ initialCharacters }: CharacterListClientPr
             className="min-w-0 flex-1 rounded-lg border border-cyan-500/30 bg-slate-950/70 px-3 py-2 text-sm text-cyan-100 placeholder:text-slate-500 focus:border-cyan-300 focus:outline-none focus:ring-1 focus:ring-cyan-300"
           />
         </div>
-        {deferredQuery && (
-          <p className="mt-2 text-xs text-slate-300">
-            Showing results for <span className="text-cyan-300">{`"${deferredQuery}"`}</span>
-          </p>
-        )}
+        <p className={`mt-2 text-xs ${deferredQuery ? "text-slate-300" : "invisible"}`}>
+          Showing results for <span className="text-cyan-300">{deferredQuery ? `"${deferredQuery}"` : '""'}</span>
+        </p>
       </header>
 
       <Suspense
