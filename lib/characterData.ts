@@ -1,14 +1,6 @@
-import { sql } from "./db";
-
-type Skill = {
-  cooldown: number | null;
-  type: string;
-  slot: string;
-  name?: string;
-  descriptionLevel10?: {
-    raw?: string | null;
-  } | null;
-};
+import { eq, asc } from "drizzle-orm";
+import { db } from "./db";
+import { characters, type Character, type Skill, type SkillWithDetail, type CV } from "./schema";
 
 export type CharacterSummary = {
   id: string;
@@ -39,60 +31,39 @@ export type CharacterSummary = {
   reloadTime?: number | null;
   controlMode?: string | null;
   backstory?: string | null;
-  cv?: {
-    kr?: string | null;
-    jpn?: string | null;
-    en?: string | null;
-  };
+  cv?: CV;
   basicAttackRaw?: string | null;
   harmonyCubesRaw?: string | null;
-  skillsWithDetail?: Array<
-    Skill & {
-      descriptionRaw?: string | null;
-    }
-  >;
+  skillsWithDetail?: SkillWithDetail[];
   specialities?: string[] | null;
 };
 
-type CharacterRow = {
-  slug: string;
-  external_id: string;
-  name: string;
-  rarity: string;
-  element: string;
-  weapon: string;
-  role: string;
-  manufacturer: string;
-  squad: string;
-  burst_type: string;
-  is_limited: boolean | null;
-  limited_event: string | null;
-  small_image_url: string;
-  card_image_url: string;
-  small_image_width: number;
-  small_image_height: number;
-  card_image_width: number;
-  card_image_height: number;
-  skills: Skill[];
-  full_image_url: string | null;
-  full_image_width: number | null;
-  full_image_height: number | null;
-  release_date: string | null;
-  weapon_name: string | null;
-  ammo_capacity: number | null;
-  reload_time: number | null;
-  control_mode: string | null;
-  backstory: string | null;
-  cv: { kr?: string | null; jpn?: string | null; en?: string | null } | null;
-  basic_attack_raw: string | null;
-  harmony_cubes_raw: string | null;
-  skills_with_detail: Array<Skill & { descriptionRaw?: string | null }> | null;
-  specialities: string[] | null;
-};
+// Columns selected for list/card views
+const summaryColumns = {
+  slug: characters.slug,
+  externalId: characters.externalId,
+  name: characters.name,
+  rarity: characters.rarity,
+  element: characters.element,
+  weapon: characters.weapon,
+  role: characters.role,
+  manufacturer: characters.manufacturer,
+  squad: characters.squad,
+  burstType: characters.burstType,
+  isLimited: characters.isLimited,
+  limitedEvent: characters.limitedEvent,
+  smallImageUrl: characters.smallImageUrl,
+  cardImageUrl: characters.cardImageUrl,
+  smallImageWidth: characters.smallImageWidth,
+  smallImageHeight: characters.smallImageHeight,
+  cardImageWidth: characters.cardImageWidth,
+  cardImageHeight: characters.cardImageHeight,
+  skills: characters.skills,
+} as const;
 
-function rowToSummary(row: CharacterRow): CharacterSummary {
+function toSummary(row: Pick<Character, keyof typeof summaryColumns>): CharacterSummary {
   return {
-    id: row.external_id,
+    id: row.externalId,
     name: row.name,
     slug: row.slug,
     rarity: row.rarity,
@@ -101,72 +72,73 @@ function rowToSummary(row: CharacterRow): CharacterSummary {
     role: row.role,
     manufacturer: row.manufacturer,
     squad: row.squad,
-    burstType: row.burst_type,
-    isLimited: row.is_limited,
-    limitedEvent: row.limited_event,
-    smallImageUrl: row.small_image_url,
-    cardImageUrl: row.card_image_url,
-    smallImageWidth: row.small_image_width,
-    smallImageHeight: row.small_image_height,
-    cardImageWidth: row.card_image_width,
-    cardImageHeight: row.card_image_height,
+    burstType: row.burstType,
+    isLimited: row.isLimited,
+    limitedEvent: row.limitedEvent,
+    smallImageUrl: row.smallImageUrl,
+    cardImageUrl: row.cardImageUrl,
+    smallImageWidth: row.smallImageWidth,
+    smallImageHeight: row.smallImageHeight,
+    cardImageWidth: row.cardImageWidth,
+    cardImageHeight: row.cardImageHeight,
     skills: row.skills,
   };
 }
 
-function rowToDetail(row: CharacterRow): CharacterSummary {
+function toDetail(row: Character): CharacterSummary {
   return {
-    ...rowToSummary(row),
-    fullImageUrl: row.full_image_url ?? undefined,
-    fullImageWidth: row.full_image_width ?? undefined,
-    fullImageHeight: row.full_image_height ?? undefined,
-    releaseDate: row.release_date,
-    weaponName: row.weapon_name,
-    ammoCapacity: row.ammo_capacity,
-    reloadTime: row.reload_time,
-    controlMode: row.control_mode,
+    ...toSummary(row),
+    fullImageUrl: row.fullImageUrl ?? undefined,
+    fullImageWidth: row.fullImageWidth ?? undefined,
+    fullImageHeight: row.fullImageHeight ?? undefined,
+    releaseDate: row.releaseDate,
+    weaponName: row.weaponName,
+    ammoCapacity: row.ammoCapacity,
+    reloadTime: row.reloadTime,
+    controlMode: row.controlMode,
     backstory: row.backstory,
     cv: row.cv ?? undefined,
-    basicAttackRaw: row.basic_attack_raw,
-    harmonyCubesRaw: row.harmony_cubes_raw,
-    skillsWithDetail: row.skills_with_detail ?? undefined,
+    basicAttackRaw: row.basicAttackRaw,
+    harmonyCubesRaw: row.harmonyCubesRaw,
+    skillsWithDetail: row.skillsWithDetail ?? undefined,
     specialities: row.specialities,
   };
 }
 
-const SUMMARY_COLUMNS = `
-  slug, external_id, name, rarity, element, weapon, role, manufacturer,
-  squad, burst_type, is_limited, limited_event,
-  small_image_url, card_image_url,
-  small_image_width, small_image_height,
-  card_image_width, card_image_height,
-  skills
-`;
-
 export async function getCharacters(): Promise<CharacterSummary[]> {
-  const rows = (await sql`
-    SELECT ${sql.unsafe(SUMMARY_COLUMNS)} FROM characters ORDER BY name
-  `) as CharacterRow[];
-  return rows.map(rowToSummary);
+  const rows = await db
+    .select(summaryColumns)
+    .from(characters)
+    .orderBy(asc(characters.name));
+  return rows.map(toSummary);
 }
 
 export async function getCharacterBySlug(
   slug: string,
 ): Promise<CharacterSummary | null> {
-  const rows = (await sql`
-    SELECT ${sql.unsafe(SUMMARY_COLUMNS)} FROM characters WHERE slug = ${slug} LIMIT 1
-  `) as CharacterRow[];
-  return rows[0] ? rowToSummary(rows[0]) : null;
+  const rows = await db
+    .select(summaryColumns)
+    .from(characters)
+    .where(eq(characters.slug, slug))
+    .limit(1);
+  return rows[0] ? toSummary(rows[0]) : null;
 }
 
 export async function getCharacterDetailBySlug(
   slug: string,
 ): Promise<CharacterSummary | null> {
-  const rows = (await sql`SELECT * FROM characters WHERE slug = ${slug} LIMIT 1`) as CharacterRow[];
-  return rows[0] ? rowToDetail(rows[0]) : null;
+  const rows = await db
+    .select()
+    .from(characters)
+    .where(eq(characters.slug, slug))
+    .limit(1);
+  return rows[0] ? toDetail(rows[0]) : null;
 }
 
 export async function getCharacterSlugs(): Promise<string[]> {
-  const rows = (await sql`SELECT slug FROM characters ORDER BY name`) as { slug: string }[];
+  const rows = await db
+    .select({ slug: characters.slug })
+    .from(characters)
+    .orderBy(asc(characters.name));
   return rows.map((r) => r.slug);
 }

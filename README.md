@@ -1,36 +1,94 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Nikke Character
+
+Goddess of Victory: Nikke character database and tier list builder. Browse character stats, skills, lore, and build shareable tier lists.
+
+## Features
+
+- **Character Roster** — searchable grid with rarity, element, weapon, class, and burst type
+- **Character Detail** — full stats, skills with descriptions, backstory, voice actors (EN/JP/KR), combat notes, harmony cubes
+- **Tier List Builder** — drag-and-drop characters into S/A/B/C/D/E tiers, shareable via URL
+
+## Tech Stack
+
+- **Framework:** Next.js 16 (App Router, React 19, TypeScript)
+- **Database:** PostgreSQL on Neon (serverless)
+- **ORM:** Drizzle ORM with `neon-http` adapter
+- **Styling:** Tailwind CSS 4
+- **URL State:** nuqs
+- **Runtime:** Bun
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
+
+- [Bun](https://bun.sh)
+- PostgreSQL database (e.g. [Neon](https://neon.tech))
+
+### Setup
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+bun install
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Create `.env.local`:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```
+DATABASE_URL=postgresql://...
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### Development
 
-## Learn More
+```bash
+bun run dev
+```
 
-To learn more about Next.js, take a look at the following resources:
+### Sync Characters
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Fetch character data from Prydwen and insert new characters into the database:
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```bash
+bun run sync
+```
 
-## Deploy on Vercel
+### Build
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```bash
+bun run build
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Database
+
+Schema is defined in `lib/schema.ts` using Drizzle ORM. Available scripts:
+
+| Script | Description |
+|---|---|
+| `bun run db:push` | Push schema changes to the database |
+| `bun run db:pull` | Introspect database into local schema |
+| `bun run db:generate` | Generate SQL migration files |
+| `bun run db:migrate` | Run pending migrations |
+| `bun run db:studio` | Open Drizzle Studio GUI |
+
+## Project Structure
+
+```
+app/
+  page.tsx              # Character list (home)
+  [slug]/page.tsx       # Character detail
+  tier-list/page.tsx    # Tier list builder
+components/             # Shared React components
+lib/
+  schema.ts             # Drizzle table definition & types
+  db.ts                 # Database connection
+  characterData.ts      # Query functions
+scripts/
+  sync-characters.ts    # Data sync from Prydwen API
+drizzle.config.ts       # Drizzle Kit configuration
+```
+
+## Data Flow
+
+```
+Prydwen API → sync script → PostgreSQL → Drizzle queries → Server Components → Browser
+```
+
+Characters are synced on-demand via `bun run sync` (insert-only-new strategy). Pages use ISR with revalidation caching for fast loads.

@@ -1,4 +1,6 @@
 import { neon } from "@neondatabase/serverless";
+import { drizzle } from "drizzle-orm/neon-http";
+import { characters, type Skill, type NewCharacter } from "../lib/schema";
 
 const DATABASE_URL = process.env.DATABASE_URL;
 if (!DATABASE_URL) {
@@ -7,22 +9,13 @@ if (!DATABASE_URL) {
 }
 
 const sql = neon(DATABASE_URL);
+const db = drizzle({ client: sql });
 
 const CHARACTER_LIST_URL = "https://www.prydwen.gg/page-data/sq/d/2474920082.json";
 const CHARACTER_DETAIL_URL = "https://www.prydwen.gg/page-data/nikke/characters/";
 const PRYDWEN_BASE_URL = "https://www.prydwen.gg";
 
 // --- Prydwen API types ---
-
-type Skill = {
-  cooldown: number | null;
-  type: string;
-  slot: string;
-  name?: string;
-  descriptionLevel10?: {
-    raw?: string | null;
-  } | null;
-};
 
 type GatsbyImage = {
   images: {
@@ -181,19 +174,21 @@ async function fetchAllDetails(
 // --- Fetch existing slugs ---
 
 async function fetchExistingSlugs(): Promise<Set<string>> {
-  const rows = (await sql`SELECT slug FROM characters`) as { slug: string }[];
+  const rows = await db
+    .select({ slug: characters.slug })
+    .from(characters);
   return new Set(rows.map((r) => r.slug));
 }
 
 // --- Insert new characters only ---
 
 async function insertNewCharacters(
-  characters: ApiCharacter[],
+  chars: ApiCharacter[],
   details: Map<string, ApiDetailUnit>,
 ) {
-  console.log(`Inserting ${characters.length} new characters...`);
+  console.log(`Inserting ${chars.length} new characters...`);
 
-  for (const char of characters) {
+  const values: NewCharacter[] = chars.map((char) => {
     const detail = details.get(char.slug);
 
     const skillsWithDetail = detail?.skills
@@ -210,47 +205,46 @@ async function insertNewCharacters(
       ? { kr: detail.cv.kr ?? null, jpn: detail.cv.jpn ?? null, en: detail.cv.en ?? null }
       : null;
 
-    await sql`
-      INSERT INTO characters (
-        slug, external_id, name, rarity, element, weapon, role, manufacturer,
-        squad, burst_type, is_limited, limited_event,
-        small_image_url, card_image_url,
-        small_image_width, small_image_height,
-        card_image_width, card_image_height,
-        skills,
-        full_image_url, full_image_width, full_image_height,
-        release_date, weapon_name, ammo_capacity, reload_time, control_mode,
-        backstory, cv, basic_attack_raw, harmony_cubes_raw,
-        skills_with_detail, specialities, synced_at
-      ) VALUES (
-        ${char.slug}, ${char.id}, ${char.name}, ${char.rarity}, ${char.element},
-        ${char.weapon}, ${char.class}, ${char.manufacturer}, ${char.squad},
-        ${char.burstType}, ${char.isLimited}, ${char.limitedEvent},
-        ${buildAbsoluteImageUrl(char.smallImage)}, ${buildAbsoluteImageUrl(char.cardImage)},
-        ${char.smallImage.localFile.childImageSharp.gatsbyImageData.width},
-        ${char.smallImage.localFile.childImageSharp.gatsbyImageData.height},
-        ${char.cardImage.localFile.childImageSharp.gatsbyImageData.width},
-        ${char.cardImage.localFile.childImageSharp.gatsbyImageData.height},
-        ${JSON.stringify(char.skills)},
-        ${detail ? buildAbsoluteImageUrl(detail.fullImage) : null},
-        ${detail?.fullImage?.localFile?.childImageSharp?.gatsbyImageData?.width ?? null},
-        ${detail?.fullImage?.localFile?.childImageSharp?.gatsbyImageData?.height ?? null},
-        ${detail?.releaseDate ?? null}, ${detail?.weaponName ?? null},
-        ${detail?.ammoCapacity ?? null}, ${detail?.reloadTime ?? null},
-        ${detail?.controlMode ?? null},
-        ${detail?.backstory?.backstory ?? null},
-        ${cv ? JSON.stringify(cv) : null},
-        ${detail?.basicAttack?.raw ?? null},
-        ${detail?.harmonyCubesInfo?.raw ?? null},
-        ${skillsWithDetail ? JSON.stringify(skillsWithDetail) : null},
-        ${detail?.specialities ?? null},
-        now()
-      )
-      ON CONFLICT (slug) DO NOTHING
-    `;
-  }
+    return {
+      slug: char.slug,
+      externalId: char.id,
+      name: char.name,
+      rarity: char.rarity,
+      element: char.element,
+      weapon: char.weapon,
+      role: char.class,
+      manufacturer: char.manufacturer,
+      squad: char.squad,
+      burstType: char.burstType,
+      isLimited: char.isLimited,
+      limitedEvent: char.limitedEvent,
+      smallImageUrl: buildAbsoluteImageUrl(char.smallImage),
+      cardImageUrl: buildAbsoluteImageUrl(char.cardImage),
+      smallImageWidth: char.smallImage.localFile.childImageSharp.gatsbyImageData.width,
+      smallImageHeight: char.smallImage.localFile.childImageSharp.gatsbyImageData.height,
+      cardImageWidth: char.cardImage.localFile.childImageSharp.gatsbyImageData.width,
+      cardImageHeight: char.cardImage.localFile.childImageSharp.gatsbyImageData.height,
+      skills: char.skills,
+      fullImageUrl: detail ? buildAbsoluteImageUrl(detail.fullImage) : null,
+      fullImageWidth: detail?.fullImage?.localFile?.childImageSharp?.gatsbyImageData?.width ?? null,
+      fullImageHeight: detail?.fullImage?.localFile?.childImageSharp?.gatsbyImageData?.height ?? null,
+      releaseDate: detail?.releaseDate ?? null,
+      weaponName: detail?.weaponName ?? null,
+      ammoCapacity: detail?.ammoCapacity ?? null,
+      reloadTime: detail?.reloadTime ?? null,
+      controlMode: detail?.controlMode ?? null,
+      backstory: detail?.backstory?.backstory ?? null,
+      cv,
+      basicAttackRaw: detail?.basicAttack?.raw ?? null,
+      harmonyCubesRaw: detail?.harmonyCubesInfo?.raw ?? null,
+      skillsWithDetail,
+      specialities: detail?.specialities ?? null,
+    };
+  });
 
-  console.log(`  Inserted ${characters.length} new characters`);
+  await db.insert(characters).values(values).onConflictDoNothing();
+
+  console.log(`  Inserted ${chars.length} new characters`);
 }
 
 // --- Main ---
@@ -258,12 +252,12 @@ async function insertNewCharacters(
 async function main() {
   const start = Date.now();
 
-  const characters = await fetchCharacterList();
+  const allCharacters = await fetchCharacterList();
   const existingSlugs = await fetchExistingSlugs();
   console.log(`  ${existingSlugs.size} characters already in DB`);
 
-  const newCharacters = characters.filter((c) => !existingSlugs.has(c.slug));
-  console.log(`  ${newCharacters.length} new characters to insert (${characters.length - newCharacters.length} skipped)`);
+  const newCharacters = allCharacters.filter((c) => !existingSlugs.has(c.slug));
+  console.log(`  ${newCharacters.length} new characters to insert (${allCharacters.length - newCharacters.length} skipped)`);
 
   if (newCharacters.length === 0) {
     console.log("Nothing to do — all characters already synced.");
