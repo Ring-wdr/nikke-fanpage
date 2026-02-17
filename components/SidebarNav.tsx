@@ -12,6 +12,10 @@ const navItems = [
     href: "/tier-list",
     label: "Tier List",
   },
+  {
+    href: "/recent-reviews",
+    label: "Recent Reviews",
+  },
 ] as const;
 
 export function SidebarNav() {

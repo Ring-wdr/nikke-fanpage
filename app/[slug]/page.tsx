@@ -9,6 +9,8 @@ import {
   getCharacterSlugs,
   type CharacterSummary,
 } from "@/lib/characterData";
+import { getReviewsBySlug, getAverageRating } from "@/lib/reviewData";
+import { ReviewSection } from "@/components/ReviewSection";
 
 type Params = {
   params: Promise<{
@@ -92,6 +94,11 @@ export default async function CharacterDetailPage({ params }: Params) {
   if (!character) {
     notFound();
   }
+
+  const [reviewsList, ratingData] = await Promise.all([
+    getReviewsBySlug(slug),
+    getAverageRating(slug),
+  ]);
 
   const detailEnabled = Boolean(detailedCharacter);
   const detailCharacter: CharacterSummary = detailEnabled && detailedCharacter ? detailedCharacter : character;
@@ -231,6 +238,13 @@ export default async function CharacterDetailPage({ params }: Params) {
         <h2 className="text-xl font-bold text-cyan-200">Skills</h2>
         {renderSkills(detailCharacter)}
       </section>
+
+      <ReviewSection
+        slug={slug}
+        reviews={reviewsList}
+        averageRating={ratingData.average}
+        reviewCount={ratingData.count}
+      />
 
     </main>
   );

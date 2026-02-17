@@ -1,5 +1,6 @@
 import {
   pgTable,
+  serial,
   text,
   boolean,
   integer,
@@ -69,7 +70,24 @@ export const characters = pgTable("characters", {
   syncedAt: timestamp("synced_at", { withTimezone: true }).defaultNow(),
 });
 
+// --- Reviews table ---
+
+export const reviews = pgTable("reviews", {
+  id: serial().primaryKey(),
+  characterSlug: text("character_slug")
+    .notNull()
+    .references(() => characters.slug),
+  nickname: text(),
+  rating: integer().notNull(),
+  content: text().notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .defaultNow()
+    .notNull(),
+});
+
 // --- Inferred types ---
 
 export type Character = typeof characters.$inferSelect;
 export type NewCharacter = typeof characters.$inferInsert;
+export type Review = typeof reviews.$inferSelect;
+export type NewReview = typeof reviews.$inferInsert;
