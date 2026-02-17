@@ -11,6 +11,21 @@ import {
 } from "@/lib/characterData";
 import { getReviewsBySlug, getAverageRating } from "@/lib/reviewData";
 import { ReviewSection } from "@/components/ReviewSection";
+import { getCharacterIcons } from "@/lib/assetPaths";
+
+function AttributeWithIcon({ iconPath, label, text }: { iconPath: string | null; label: string; text: string }) {
+  return (
+    <div className="grid grid-cols-[110px_1fr]">
+      <dt className="text-slate-400">{label}</dt>
+      <dd className="flex items-center gap-1.5">
+        {iconPath && (
+          <Image src={iconPath} alt={text} title={text} width={20} height={20} className="h-5 w-5" />
+        )}
+        {text}
+      </dd>
+    </div>
+  );
+}
 
 type Params = {
   params: Promise<{
@@ -103,6 +118,7 @@ export default async function CharacterDetailPage({ params }: Params) {
   const detailEnabled = Boolean(detailedCharacter);
   const detailCharacter: CharacterSummary = detailEnabled && detailedCharacter ? detailedCharacter : character;
   const isDetailFallback = !detailEnabled;
+  const icons = getCharacterIcons(detailCharacter);
 
   return (
     <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
@@ -132,18 +148,9 @@ export default async function CharacterDetailPage({ params }: Params) {
               <dt className="text-slate-400">Rarity</dt>
               <dd>{detailCharacter.rarity}</dd>
             </div>
-            <div className="grid grid-cols-[110px_1fr]">
-              <dt className="text-slate-400">Element</dt>
-              <dd>{detailCharacter.element}</dd>
-            </div>
-            <div className="grid grid-cols-[110px_1fr]">
-              <dt className="text-slate-400">Weapon</dt>
-              <dd>{detailCharacter.weapon}</dd>
-            </div>
-            <div className="grid grid-cols-[110px_1fr]">
-              <dt className="text-slate-400">Class</dt>
-              <dd>{detailCharacter.role}</dd>
-            </div>
+            <AttributeWithIcon iconPath={icons.element} label="Element" text={detailCharacter.element} />
+            <AttributeWithIcon iconPath={icons.weapon} label="Weapon" text={detailCharacter.weapon} />
+            <AttributeWithIcon iconPath={icons.role} label="Class" text={detailCharacter.role} />
             <div className="grid grid-cols-[110px_1fr]">
               <dt className="text-slate-400">Manufacturer</dt>
               <dd>{detailCharacter.manufacturer}</dd>
@@ -152,10 +159,7 @@ export default async function CharacterDetailPage({ params }: Params) {
               <dt className="text-slate-400">Squad</dt>
               <dd>{detailCharacter.squad}</dd>
             </div>
-            <div className="grid grid-cols-[110px_1fr]">
-              <dt className="text-slate-400">Burst Type</dt>
-              <dd>{detailCharacter.burstType}</dd>
-            </div>
+            <AttributeWithIcon iconPath={icons.burst} label="Burst Type" text={detailCharacter.burstType} />
             <div className="grid grid-cols-[110px_1fr]">
               <dt className="text-slate-400">Limited</dt>
               <dd>{detailCharacter.isLimited === null ? "Unknown" : detailCharacter.isLimited ? "Yes" : "No"}</dd>
