@@ -1,3 +1,5 @@
+export const revalidate = 3600;
+
 import Link from "next/link";
 import Image from "next/image";
 import { notFound } from "next/navigation";
@@ -53,7 +55,8 @@ function parseRichText(raw?: string | null): string {
 
 function renderSkills(character: CharacterSummary) {
   const detailSkills = character.skillsWithDetail ?? [];
-  const skillsToRender = detailSkills.length > 0 ? detailSkills : character.skills;
+  const skillsToRender: Array<{ descriptionRaw?: string | null } & (typeof character.skills)[number]> =
+    detailSkills.length > 0 ? detailSkills : character.skills;
 
   if (skillsToRender.length === 0) {
     return <p className="text-slate-300">No skills registered.</p>;

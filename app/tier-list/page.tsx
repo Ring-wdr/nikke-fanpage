@@ -1,6 +1,9 @@
+import { Suspense } from "react";
 import { getCharacters } from "@/lib/characterData";
 import { TierListBuilder } from "./TierListBuilder";
 import { CopyLinkButton } from "./CopyLinkButton";
+
+export const revalidate = 3600;
 
 type TierCharacter = {
   slug: string;
@@ -41,7 +44,9 @@ export default async function TierListPage() {
           </div>
           <CopyLinkButton />
         </div>
-        <TierListBuilder characters={paletteItems} />
+        <Suspense>
+          <TierListBuilder characters={paletteItems} />
+        </Suspense>
       </section>
     </main>
   );

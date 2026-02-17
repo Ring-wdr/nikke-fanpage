@@ -11,9 +11,9 @@ type CharacterListClientProps = {
 };
 
 export function CharacterListClient({ initialCharacters }: CharacterListClientProps) {
-  const [searchQuery, setSearchQuery] = useQueryState("q", parseAsString.withDefault(""), {
+  const [searchQuery, setSearchQuery] = useQueryState("q", parseAsString.withDefault("").withOptions({
     history: "replace",
-  });
+  }));
   const inputRef = useRef<HTMLInputElement>(null);
   const deferredQuery = useDeferredValue(searchQuery);
   const [, startTransition] = useTransition();
